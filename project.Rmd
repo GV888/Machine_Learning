@@ -1,0 +1,89 @@
+---
+title: "Practical Machine Learning project"
+output: html_document
+---
+
+This is Practical Machine Learning project.
+
+At first we load the necessary libraries:
+
+```{r}
+library(caret); library(kernlab);library(doParallel);library(foreach);
+```
+
+Then we load the trainings data:
+```{r}
+  training <- read.csv("R/machinelearning/pml-training.csv", na.strings=c("#DIV/0!","NA",""))
+  evaluation <- read.csv("R/machinelearning/pml-testing.csv", na.strings=c("#DIV/0!","NA",""))
+```
+
+Subset the data for trainig and skip username and date rows
+```{r}
+feature_set <- training[,6:160]
+evaluation_set <- evaluation[,6:160]
+```
+
+Analyze the features data :
+```{r}
+nsv <- nearZeroVar(feature_set,saveMetrics=TRUE)
+nsv
+```
+
+Removing zero covariates:
+```{r}
+dim(feature_set)
+feature_set <- feature_set[,!nsv$zeroVar]
+dim(feature_set)
+```
+
+Preprocess the data:
+Convert all features to numeric
+```{r}
+feature_set<-feature_set[,colSums(is.na(feature_set)) == 0]
+evaluation_set<-evaluation_set[,colSums(is.na(evaluation_set)) == 0]
+
+for(i in c(1:ncol(feature_set))) {feature_set[,i] = as.numeric((feature_set[,i]))}
+for(i in c(1:ncol(evaluation_set))) {evaluation_set[,i] = as.numeric((evaluation_set[,i]))}
+
+
+```
+
+Split the data to training and testing sets
+```{r}
+set.seed(96)
+idx <- createDataPartition(y=feature_set$classe, p=0.75, list=FALSE )
+training_set <- feature_set[idx,]
+testing_set <- feature_set[-idx,]
+```
+
+Pre process the date
+```{r}
+#preProcValues <- preProcess(training_set[-ncol(training_set)],method=c("center","scale","knnImpute"))
+#trainTransformed <- predict(preProcValues, training_set)
+#testTransformed <- predict(preProcValues, testing_set)
+```
+
+Use Random Forests
+```{r}
+registerDoParallel()
+classe <- training_set$classe
+variables <- training_set[-ncol(training_set)]
+
+rf <- foreach(ntree=rep(150, 6), .combine=randomForest::combine, .packages='randomForest') %dopar% {
+  randomForest(variables, classe, ntree=ntree) 
+}
+```
+
+
+Confusion Matrix for Test set
+```{r}
+predictions <- predict(rf, newdata=testing_set)
+confusionMatrix(predictions,testing_set$classe)
+```
+
+
+```{r, echo=FALSE}
+plot(preProcValues)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
