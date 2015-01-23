@@ -1,3 +1,5 @@
+#install.packages("rmarkdown")
+
 library(caret); library(kernlab); 
 #install.packages("RANN"); 
 library(foreach);
@@ -23,27 +25,36 @@ evaluation_set <- evaluation[,6:160]
 feature_set<-feature_set[,colSums(is.na(feature_set)) == 0]
 evaluation_set<-evaluation_set[,colSums(is.na(evaluation_set)) == 0]
 
-for(i in c(1:ncol(feature_set))) {feature_set[,i] = as.numeric((feature_set[,i]))}
-for(i in c(1:ncol(evaluation_set))) {evaluation_set[,i] = as.numeric((evaluation_set[,i]))}
+#for(i in c(1:ncol(feature_set))) {feature_set[,i] = as.numeric((feature_set[,i]))}
+#for(i in c(1:ncol(evaluation_set))) {evaluation_set[,i] = as.numeric((evaluation_set[,i]))}
 
-nsv <- nearZeroVar(feature_set,saveMetrics=TRUE)
+#nsv <- nearZeroVar(feature_set,saveMetrics=TRUE)
 
-dim(feature_set)
-training_set = feature_set[,!nsv$zeroVar]
-dim(training_set)
+#dim(feature_set)
+#training_set = feature_set[,!nsv$zeroVar]
+#dim(training_set)
 
 idx <- createDataPartition(y=feature_set$classe, p=0.75, list=FALSE )
 training_set <- feature_set[idx,]
 testing_set <- feature_set[-idx,]
 
-
+testing_set$classe <- factor(testing_set$classe)
 #head(training_set[,-ncol(training_set)])
 
 set.seed(32343)
 #preProcValues <- preProcess(training_set[-ncol(training_set)],method=c("center","scale","knnImpute"))
 #trainTransformed <- predict(preProcValues, training_set)
 #testTransformed <- predict(preProcValues, testing_set)
-treeFit <- train(y=as.factor(training_set$classe), x=training_set[-ncol(training_set)],preProcess=c("center","scale","knnImpute"))
+#treeFit <- train(y=as.factor(training_set$classe), x=training_set[-ncol(training_set)],preProcess=c("center","scale","knnImpute"))
+
+modelFit <- train(y=as.factor(training_set$classe), x=training_set[-ncol(training_set)], tuneGrid=data.frame(mtry=3), trControl=trainControl(method="none"), method="parRF")
+prediction <- predict(modelFit, newdata=testing_set)
+confusionMatrix(prediction, testing_set$classe)
+
+print(plot(varImp(modelFit, scale = FALSE)))
+
+#modFit <- train(Species~ .,data=training,method="rf",prox=TRUE)
+
 
 registerDoParallel()
 classe <- training_set$classe
