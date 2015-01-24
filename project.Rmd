@@ -1,20 +1,22 @@
 ---
 title: "Practical Machine Learning project"
 output: html_document
+
 ---
 
 This is Practical Machine Learning project.
 
 At first we load the necessary libraries:
 
-```{r}
-library(caret); library(kernlab);library(doParallel);library(foreach);
+```{r warning=FALSE, message=FALSE}
+
+library(caret); library(kernlab);library(doParallel);
 ```
 
 Then we load the trainings data:
 ```{r}
-  training <- read.csv("C:/Users/Viktor/Documents/R/machinelearning/pml-training.csv", na.strings=c("#DIV/0!","NA",""))
-  evaluation <- read.csv("C:/Users/Viktor/Documents/R/machinelearning/pml-testing.csv", na.strings=c("#DIV/0!","NA",""))
+  training <- read.csv("c:/Users/Viktor/workspace/coursera/Machine_Learning/pml-training.csv", na.strings=c("#DIV/0!","NA",""))
+  evaluation <- read.csv("c:/Users/Viktor/workspace/coursera/Machine_Learning/pml-testing.csv", na.strings=c("#DIV/0!","NA",""))
 ```
 
 Subset the data for trainig and skip username and date rows
@@ -24,7 +26,7 @@ evaluation_set <- evaluation[,6:160]
 ```
 
 
-Preprocess the data:
+<h3>Preprocess the data</h3>
 Convert all features to numeric and remove all rows with missing data
 ```{r}
 feature_set<-feature_set[,colSums(is.na(feature_set)) == 0]
@@ -47,20 +49,18 @@ testing_set <- feature_set[-idx,]
 
 
 Use Random Forests
-```{r}
+```{r warning=FALSE, message=FALSE}
 registerDoParallel()
 modelFit <- train(y=as.factor(training_set$classe), x=training_set[-ncol(training_set)], tuneGrid=data.frame(mtry=3), trControl=trainControl(method="none"), method="parRF")
 ```
 
-
-Confusion Matrix for Test set
+<h3>Cross-validation</h3>
+The result will be placed in a confusion matrix to determinant the classifications accuracy.
 ```{r}
 prediction <- predict(modelFit, newdata=testing_set)
 confusionMatrix(prediction, testing_set$classe)
 ```
+<h3>Conclusions</h3>
+This model yielded a 99.86% prediction accuracy. Again, this model proved very robust and adequete to predict new data.
 
-
-```{r, echo=FALSE}
-print(plot(varImp(modelFit, scale = FALSE)))
-```
 
